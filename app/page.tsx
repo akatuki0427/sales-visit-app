@@ -60,12 +60,27 @@ export default function SalesApp() {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await supabase.from("visits").insert([formData]);
+    // 日付（visit_date）を自動的に追加して保存します
+    const { error } = await supabase.from("visits").insert([
+      {
+        ...formData,
+        visit_date: new Date().toISOString(), // 今日この瞬間の日時を注入
+      }
+    ]);
 
     if (error) {
       alert("エラーが発生しました: " + error.message);
     } else {
-      setFormData({ ...formData, customer_name: "", content: "", item_1: "", item_2: "", item_3: "", item_4: "" });
+      // 保存成功後、入力フォームを空にする
+      setFormData({ 
+        ...formData, 
+        customer_name: "", 
+        content: "", 
+        item_1: "", 
+        item_2: "", 
+        item_3: "", 
+        item_4: "" 
+      });
       fetchVisits();
       alert("保存しました！AI部長のフィードバックを生成中...");
     }
