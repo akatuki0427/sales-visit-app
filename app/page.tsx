@@ -60,18 +60,19 @@ export default function SalesApp() {
     e.preventDefault();
     setLoading(true);
     
-    // 日付（visit_date）を自動的に追加して保存します
+    // 1. Supabaseへ保存
     const { error } = await supabase.from("visits").insert([
       {
         ...formData,
-        visit_date: new Date().toISOString(), // 今日この瞬間の日時を注入
+        visit_date: new Date().toISOString(),
       }
     ]);
 
     if (error) {
       alert("エラーが発生しました: " + error.message);
     } else {
-      // 保存成功後、入力フォームを空にする
+      // 2. フォームをクリア
+      const submittedData = { ...formData }; // GASに送るためにデータを保持
       setFormData({ 
         ...formData, 
         customer_name: "", 
@@ -82,7 +83,22 @@ export default function SalesApp() {
         item_4: "" 
       });
       fetchVisits();
-      alert("保存しました！AI部長のフィードバックを生成中...");
+      alert("保存完了！AI部長に報告しています...");
+
+      // 3. ★GASのAI部長を呼び出す（ここが追加ポイント！）
+      try {
+        await fetch(process.env.NEXT_PUBLIC_GAS_URL!, {
+          method: 'POST',
+          mode: 'no-cors', // GASを呼び出すための特殊なおまじない
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(submittedData)
+        });
+        
+        // 少し待ってから履歴を再読み込み（AI部長が書き込む時間を待つ）
+        setTimeout(() => fetchVisits(), 3000);
+      } catch (err) {
+        console.error("GAS連携エラー:", err);
+      }
     }
     setLoading(false);
   };
